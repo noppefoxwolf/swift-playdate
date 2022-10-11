@@ -65,7 +65,7 @@ struct playdate_sys
 	int (*setCrankSoundsDisabled)(int flag); // returns previous setting
 
 	int (*getFlipped)(void);
-	void (*setAutoLockDisabled)(int enable);
+	void (*setAutoLockDisabled)(int disable);
 
 	void (*setMenuImage)(LCDBitmap* bitmap, int xOffset);
 	PDMenuItem* (*addMenuItem)(const char *title, PDMenuItemCallbackFunction* callback, void* userdata);

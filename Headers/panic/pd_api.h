@@ -55,8 +55,6 @@ typedef enum
 
 // main entry point defined in game code, called for the above events
 
-extern PlaydateAPI* pd;
-
 #ifdef _WINDLL
 __declspec(dllexport)
 #endif

@@ -33,6 +33,13 @@ static inline uint32_t SoundFormat_bytesPerFrame(SoundFormat fmt)
 
 #endif
 
+typedef float MIDINote;
+#define NOTE_C4 60
+
+#include <math.h>
+static inline float pd_noteToFrequency(MIDINote n) { return 440 * powf(2.0, (n-69)/12.0f); }
+static inline MIDINote pd_frequencyToNote(float f) { return 12*log2f(f) - 36.376316562f; }
+
 // SOUND SOURCES
 
 typedef struct SoundSource SoundSource;
@@ -54,7 +61,7 @@ struct playdate_sound_fileplayer
 {
 	FilePlayer* (*newPlayer)(void);
 	void (*freePlayer)(FilePlayer* player);
-	void (*loadIntoPlayer)(FilePlayer* player, const char* path);
+	int (*loadIntoPlayer)(FilePlayer* player, const char* path);
 	void (*setBufferLength)(FilePlayer* player, float bufferLen);
 	int (*play)(FilePlayer* player, int repeat);
 	int (*isPlaying)(FilePlayer* player);
@@ -121,6 +128,20 @@ struct playdate_sound_sampleplayer // SamplePlayer extends SoundSource
 typedef struct PDSynthSignalValue PDSynthSignalValue;
 typedef struct PDSynthSignal PDSynthSignal;
 
+typedef float (*signalStepFunc)(void* userdata, int* ioframes, float* ifval);
+typedef void (*signalNoteOnFunc)(void* userdata, MIDINote note, float vel, float len); // len = -1 for indefinite
+typedef void (*signalNoteOffFunc)(void* userdata, int stopped, int offset); // ended = 0 for note release, = 1 when note stops playing
+typedef void (*signalDeallocFunc)(void* userdata);
+
+struct playdate_sound_signal
+{
+	PDSynthSignal* (*newSignal)(signalStepFunc step, signalNoteOnFunc noteOn, signalNoteOffFunc noteOff, signalDeallocFunc dealloc, void* userdata);
+	void (*freeSignal)(PDSynthSignal* signal);
+	float (*getValue)(PDSynthSignal* signal);
+	void (*setValueScale)(PDSynthSignal* signal, float scale);
+	void (*setValueOffset)(PDSynthSignal* signal, float offset);
+};
+
 #if TARGET_EXTENSION
 typedef enum
 {
@@ -153,13 +174,13 @@ struct playdate_sound_lfo
 	void (*setRetrigger)(PDSynthLFO* lfo, int flag);
 	
 	float (*getValue)(PDSynthLFO* lfo);
+	
+	// 1.10
+	void (*setGlobal)(PDSynthLFO* lfo, int global);
 };
 
 
 typedef struct PDSynthEnvelope PDSynthEnvelope; // inherits from SynthSignal
-
-typedef float MIDINote;
-#define NOTE_C4 60
 
 struct playdate_sound_envelope
 {
@@ -194,10 +215,18 @@ typedef enum
 } SoundWaveform;
 #endif
 
-typedef int (*synthRenderFunc)(void* userdata, int32_t* left, int32_t* right, int nsamples, uint32_t rate, int32_t drate, int32_t l, int32_t dl, int32_t r, int32_t dr); // sample buffers are q8.24 format, and synth output should be added to existing samples in the buffers. l,dr and r,dr are envelope levels,ramp slope for left and right channels, in q4.28 format
+// generator render callback
+// samples are in Q8.24 format. left is either the left channel or the single mono channel,
+// right is non-NULL only if the stereo flag was set in the setGenerator() call.
+// nsamples is at most 256 but may be shorter
+// rate is Q0.32 per-frame phase step, drate is per-frame rate step (i.e., do rate += drate every frame)
+// return value is the number of sample frames rendered
+typedef int (*synthRenderFunc)(void* userdata, int32_t* left, int32_t* right, int nsamples, uint32_t rate, int32_t drate);
+
+// generator event callbacks
 typedef void (*synthNoteOnFunc)(void* userdata, MIDINote note, float velocity, float len); // len == -1 if indefinite
 typedef void (*synthReleaseFunc)(void* userdata, int stop);
-typedef int (*synthSetParameterFunc)(void* userdata, uint8_t parameter, float value);
+typedef int (*synthSetParameterFunc)(void* userdata, int parameter, float value);
 typedef void (*synthDeallocFunc)(void* userdata);
 
 typedef struct PDSynth PDSynth;
@@ -208,7 +237,7 @@ struct playdate_sound_synth // PDSynth extends SoundSource
 	void (*freeSynth)(PDSynth* synth);
 	
 	void (*setWaveform)(PDSynth* synth, SoundWaveform wave);
-	void (*setGenerator)(PDSynth* synth, synthRenderFunc* render, synthNoteOnFunc* noteOn, synthReleaseFunc* release, synthSetParameterFunc* setparam, synthDeallocFunc* dealloc, void* userdata);
+	void (*setGenerator)(PDSynth* synth, int stereo, synthRenderFunc render, synthNoteOnFunc noteOn, synthReleaseFunc release, synthSetParameterFunc setparam, synthDeallocFunc dealloc, void* userdata);
 	void (*setSample)(PDSynth* synth, AudioSample* sample, uint32_t sustainStart, uint32_t sustainEnd);
 
 	void (*setAttackTime)(PDSynth* synth, float attack);
@@ -308,6 +337,9 @@ struct playdate_sound_track
 	uint32_t (*getLength)(SequenceTrack* track); // in steps, includes full last note
 	int (*getIndexForStep)(SequenceTrack* track, uint32_t step);
 	int (*getNoteAtIndex)(SequenceTrack* track, int index, uint32_t* outStep, uint32_t* outLen, MIDINote* outNote, float* outVelocity);
+	
+	// 1.10
+	ControlSignal* (*getSignalForController)(SequenceTrack* track, int controller, int create);
 };
 
 // and a SoundSequence is a collection of tracks, along with control info like tempo and loops
@@ -528,6 +560,9 @@ struct playdate_sound
 	
 	// 1.5
 	void (*removeSource)(SoundSource* source);
+	
+	// 1.12
+	const struct playdate_sound_signal* signal;
 };
 
 #endif /* pdext_sound_h */

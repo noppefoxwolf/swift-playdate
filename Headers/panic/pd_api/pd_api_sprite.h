@@ -103,7 +103,7 @@ struct playdate_sprite
 	void (*setDrawMode)(LCDSprite *sprite, LCDBitmapDrawMode mode);
 	void (*setImageFlip)(LCDSprite *sprite, LCDBitmapFlip flip);
 	LCDBitmapFlip (*getImageFlip)(LCDSprite *sprite);
-	void (*setStencil)(LCDSprite *sprite, LCDBitmap* stencil);
+	void (*setStencil)(LCDSprite *sprite, LCDBitmap* stencil); // deprecated in favor of setStencilImage()
 	
 	void (*setClipRect)(LCDSprite *sprite, LCDRect clipRect);
 	void (*clearClipRect)(LCDSprite *sprite);
@@ -153,6 +153,9 @@ struct playdate_sprite
 
 	void (*setUserdata)(LCDSprite* sprite, void* userdata);
 	void* (*getUserdata)(LCDSprite* sprite);
+	
+	// added in 1.10
+	void (*setStencilImage)(LCDSprite *sprite, LCDBitmap* stencil, int tile);
 };
 
 #endif /* pdext_sprite_h */

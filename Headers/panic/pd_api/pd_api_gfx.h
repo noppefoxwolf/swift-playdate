@@ -88,6 +88,9 @@ typedef enum
 typedef uint8_t LCDPattern[16]; // 8x8 pattern: 8 rows image data, 8 rows mask
 typedef uintptr_t LCDColor; // LCDSolidColor or pointer to LCDPattern
 
+#define LCDMakePattern(r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,ra,rb,rc,rd,re,rf) (LCDPattern){(r0),(r1),(r2),(r3),(r4),(r5),(r6),(f7),(r8),(r9),(ra),(rb),(rc),(rd),(re),(rf)}
+#define LCDOpaquePattern(r0,r1,r2,r3,r4,r5,r6,r7) (LCDPattern){(r0),(r1),(r2),(r3),(r4),(r5),(r6),(r7),0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff}
+
 typedef enum
 {
 	kPolygonFillNonZero,
@@ -99,6 +102,7 @@ typedef enum
 typedef struct LCDBitmap LCDBitmap;
 typedef struct LCDBitmapTable LCDBitmapTable;
 typedef struct LCDFont LCDFont;
+typedef struct LCDFontData LCDFontData;
 typedef struct LCDFontPage LCDFontPage;
 typedef struct LCDFontGlyph LCDFontGlyph;
 typedef struct LCDVideoPlayer LCDVideoPlayer;
@@ -122,7 +126,7 @@ struct playdate_graphics
 	// Drawing Functions
 	void (*clear)(LCDColor color);
 	void (*setBackgroundColor)(LCDSolidColor color);
-	void (*setStencil)(LCDBitmap* stencil);
+	void (*setStencil)(LCDBitmap* stencil); // deprecated in favor of setStencilImage, which adds a "tile" flag
 	void (*setDrawMode)(LCDBitmapDrawMode mode);
 	void (*setDrawOffset)(int dx, int dy);
 	void (*setClipRect)(int x, int y, int width, int height);
@@ -150,7 +154,7 @@ struct playdate_graphics
 	LCDBitmap* (*loadBitmap)(const char* path, const char** outerr);
 	LCDBitmap* (*copyBitmap)(LCDBitmap* bitmap);
 	void (*loadIntoBitmap)(const char* path, LCDBitmap* bitmap, const char** outerr);
-	void (*getBitmapData)(LCDBitmap* bitmap, int* width, int* height, int* rowbytes, int* hasmask, uint8_t** data);
+	void (*getBitmapData)(LCDBitmap* bitmap, int* width, int* height, int* rowbytes, uint8_t** mask, uint8_t** data);
 	void (*clearBitmap)(LCDBitmap* bitmap, LCDColor bgcolor);
 	LCDBitmap* (*rotatedBitmap)(LCDBitmap* bitmap, float rotation, float xscale, float yscale, int* allocedSize);
 
@@ -195,6 +199,12 @@ struct playdate_graphics
 	// 1.8
 	int (*setBitmapMask)(LCDBitmap* bitmap, LCDBitmap* mask);
 	LCDBitmap* (*getBitmapMask)(LCDBitmap* bitmap);
+	
+	// 1.10
+	void (*setStencilImage)(LCDBitmap* stencil, int tile);
+	
+	// 1.12
+	LCDFont* (*makeFontFromData)(LCDFontData* data, int wide);
 };
 
 #endif /* pdext_gfx_h */

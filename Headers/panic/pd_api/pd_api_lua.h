@@ -14,20 +14,10 @@
 typedef void* lua_State;
 typedef int (*lua_CFunction)(lua_State* L);
 
-typedef struct luaL_Val
-{
-	const char *name;
-	enum { kInt, kFloat, kStr } type;
-	union
-	{
-		unsigned int intval;
-		float floatval;
-		const char* strval;
-	} v;
-} luaL_Val;
-
 typedef struct LuaUDObject LuaUDObject;
 typedef struct LCDSprite LCDSprite;
+
+typedef enum { kInt, kFloat, kStr } l_valtype;
 
 #endif
 
@@ -50,11 +40,23 @@ enum LuaType
 	kTypeObject
 };
 
+typedef struct
+{
+	const char *name;
+	l_valtype type;
+	union
+	{
+		unsigned int intval;
+		float floatval;
+		const char* strval;
+	} v;
+} lua_val;
+
 struct playdate_lua
 {
 	// these two return 1 on success, else 0 with an error message in outErr
 	int (*addFunction)(lua_CFunction f, const char* name, const char** outErr);
-	int (*registerClass)(const char* name, const lua_reg* reg, const luaL_Val* vals, int isstatic, const char** outErr);
+	int (*registerClass)(const char* name, const lua_reg* reg, const lua_val* vals, int isstatic, const char** outErr);
 
 	void (*pushFunction)(lua_CFunction f);
 	int (*indexMetatable)(void);

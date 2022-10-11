@@ -45,7 +45,7 @@ struct playdate_file
 {
 	const char* (*geterr)(void);
 
-	int		(*listfiles)(const char* path, void (*callback)(const char* path, void* userdata), void* userdata);
+	int		(*listfiles)(const char* path, void (*callback)(const char* path, void* userdata), void* userdata, int showhidden);
 	int		(*stat)(const char* path, FileStat* stat);
 	int		(*mkdir)(const char* path);
 	int		(*unlink)(const char* name, int recursive);

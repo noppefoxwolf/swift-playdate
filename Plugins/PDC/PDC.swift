@@ -3,7 +3,7 @@ import PackagePlugin
 
 @main
 struct PDC: CommandPlugin {
-  let pdxVersionString = "pdxversion=10900"
+  let pdxVersionString = "pdxversion=11230"
 
   func performCommand(context: PluginContext, arguments: [String]) throws {
     let cwd = context.pluginWorkDirectory.string
